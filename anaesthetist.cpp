@@ -20,8 +20,10 @@ void OnTick(){
   int order_count,                        //Number of orders
       order_type = -1,
       order_ticket;
-  double  ma_1_current,                   //Current shorter moving average value
-          ma_2_current,                   //Current longer moving average value
+  double  ma_1_current_trading,           //Current shorter moving average value, 5min chart
+          ma_1_current_alignment,         //Current shorter moving average value, 15min chart
+          ma_2_current_trading,           //Current longer moving average value, 5min chart
+          ma_2_current_alignment,         //Current longer moving average value, 15min chart
           selected_lot_size,              //Amount of lots in selected order
           opened_lot_size,                //Amount of lots in an opened order
           minimum_lot_size,               //Mimimum required amount of lots
@@ -72,6 +74,34 @@ void OnTick(){
           " Selected Lot Size: ", selected_lot_size);
   }
                         //End Of Accounting Loop//
+
+
+  //Section 3: Specifying Trading Criteria
+
+  //3_a: Verifying Trend
+  ma_1_current_trading = iMA(NULL,5,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_2_current_trading = iMA(NULL,5,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_1_current_alignment = iMA(NULL,15,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_2_current_alignment = iMA(NULL,15,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
+
+  bool trading_uptrend = (ma_1_current_trading > ma_2_current_trading);
+                                    //true if 5m is in technical uptrend
+  bool alignment_uptrend = (ma_1_current_alignment > ma_2_current_alignment);
+                                    //true if 15m is in technical uptrend
+  bool market_aligned = (trading_uptrend==alignment_uptrend);
+                                    //true if both timeframes trend in same
+                                    //direction
+
+  if (trading_uptrend && market_aligned) Alert(Symbol()," in an aligned uptrend.");
+  if (!trading_uptrend && market_aligned) Alert(Symbol()," in an aligned downtrend.");
+  if (!market_aligned) Alert(Symbol()," unaligned. Trading on hold.");
+
+  //if (trading_uptrend) Alert("Currently in uptrend on the 5 min chart.");
+  //if (!trading_uptrend) Alert("Currently in downtrend on the 5 min chart.");
+  //if (alignment_uptrend) Alert("Currently in uptrend on the 15 min chart.");
+  //if (!alignment_uptrend) Alert("Currently in downtrend on the 15 min chart.");
+  //if (market_aligned) Alert("Market is aligned. Trading can commence.");
+  //if(!market_aligned) Alert("Market is NOT aligned. Trading on hold.");
 
 
 }
