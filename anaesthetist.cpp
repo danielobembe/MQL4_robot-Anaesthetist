@@ -28,6 +28,8 @@ void OnTick(){
           stoch_alignment_current,        //Current value of stochastic oscillator on 15 min chart
           stoch_trading_previous,         //Previous (1 bar) value of stochastic oscillator on 5 min chart
           stoch_alignment_previous,       //Previous (1 brar) value of stochastic oscillator on 15 min chart
+          delta_stoch_trading,            //change between previous and current stochastic oscillator on 5min chart
+          delta_stoch_alignment,          //change between previous and current stochastic oscillator on 15min chart
           selected_lot_size,              //Amount of lots in selected order
           opened_lot_size,                //Amount of lots in an opened order
           minimum_lot_size,               //Mimimum required amount of lots
@@ -37,6 +39,11 @@ void OnTick(){
           order_price,                    //Price of a selected order
           stop_loss,
           take_profit;
+   bool   close_buy = false,              //Criterion for closing Buy order
+          close_sell = false,             //Criterion for closing Sell order
+          open_buy = false,               //Criterion for opening Buy order
+          open_sell = false;              //Criterion for opening Sell order
+
 
   //  Section 1: Preliminary Processing
   if (Bars < ma_1_period){                //Not enough bars
@@ -82,7 +89,7 @@ void OnTick(){
 
   //Section 3: Specifying Trading Criteria
 
-  //3_a: Verifying Trend
+  //3_a: Tools For Verifying Trend
   ma_1_current_trading = iMA(NULL,5,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
                                     //5 min exponenetial moving average, period 50
   ma_2_current_trading = iMA(NULL,5,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
@@ -98,23 +105,46 @@ void OnTick(){
   bool market_aligned = (trading_uptrend==alignment_uptrend);
                                     //true if both timeframes trend in same
                                     //direction
+
+  //3_b: Tools For Verifying Direction
   stoch_trading_current = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,0);
-                                    //stochastic oscillator 5 min
+                                    //stochastic oscillator 5 min, current bar
   stoch_trading_previous = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,1);
-
+                                    //stochastic oscillator 5 min, previous bar
   stoch_alignment_current = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,0);
-                                    //stochastic oscillator 15 min
+                                    //stochastic oscillator 15 min, current bar
   stoch_alignment_previous = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,1);
+                                    //stochastic oscillator 15 min, previous bar
+  delta_stoch_trading = stoch_trading_current - stoch_trading_previous;
+                                    //change in stoch, 5 min
+  delta_stoch_alignment = stoch_alignment_current - stoch_alignment_previous;
+                                    //change in stoch, 15 min
 
-
+  //3_c: Specifying Trading Criteria
   if (trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
+      if((stoch_alignment_current<=80.0 && delta_stoch_alignment>0)
+        && (stoch_trading_current<=20.0 && delta_stoch_trading>0)) {
+        Alert("Open Buy");
+      }
+      if(//(stoch_alignment_current>=80.0 || delta_stoch_alignment<0) &&     //I think this is a bad condition esp 1st part
+        (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
+        Alert("Close Buy");
+      }
   }
   if (!trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
+      if((stoch_alignment_current>=20.0 && delta_stoch_alignment<0)
+        && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
+        Alert("Open Sell");
+      }
+      if(//(stoch_alignment_current<20.0 || delta_stoch_alignment>0) &&
+        (stoch_trading_current<20.0 && delta_stoch_trading>0)) {
+        Alert("Close Sell");
+      }
   }
   if (!market_aligned) {
-      Alert(Symbol()," unaligned. Trading on hold. ", stoch_trading_current);
+      Alert(Symbol()," unaligned. Trading suspended. ", stoch_trading_current);
   }
 
 
