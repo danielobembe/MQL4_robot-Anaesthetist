@@ -42,7 +42,8 @@ void OnTick(){
    bool   close_buy = false,              //Criterion for closing Buy order
           close_sell = false,             //Criterion for closing Sell order
           open_buy = false,               //Criterion for opening Buy order
-          open_sell = false;              //Criterion for opening Sell order
+          open_sell = false,              //Criterion for opening Sell order
+          trade_answer = false;           //Response from broker regarding trade request
 
 
   //  Section 1: Preliminary Processing
@@ -126,10 +127,12 @@ void OnTick(){
       if((stoch_alignment_current<=80.0 && delta_stoch_alignment>0)
         && (stoch_trading_current<=20.0 && delta_stoch_trading>0)) {
         Alert("Open Buy");
+        open_buy = true;
       }
       if(//(stoch_alignment_current>=80.0 || delta_stoch_alignment<0) &&     //I think this is a bad condition esp 1st part
         (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         Alert("Close Buy");
+        close_buy = true;
       }
   }
   if (!trading_uptrend && market_aligned) {
@@ -137,10 +140,12 @@ void OnTick(){
       if((stoch_alignment_current>=20.0 && delta_stoch_alignment<0)
         && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         Alert("Open Sell");
+        open_sell = true;
       }
       if(//(stoch_alignment_current<20.0 || delta_stoch_alignment>0) &&
         (stoch_trading_current<20.0 && delta_stoch_trading>0)) {
         Alert("Close Sell");
+        close_sell = true;
       }
   }
   if (!market_aligned) {
@@ -148,11 +153,42 @@ void OnTick(){
   }
 
 
-
+  //Section 4: Closing Orders
+  while(true) {                                   //order closing loop
+    if(order_type==0 && close_buy==true) {        //i.e a Buy order is currently open
+      Alert("Attempting to close Buy order ",order_ticket,". Awaiting response.");
+      RefreshRates();                             //refresh rates
+      trade_answer=OrderClose(order_ticket,selected_lot_size,Bid,2); //attempt to close Buy order
+      if (trade_answer==true){
+        Alert("Buy order ",order_ticket," successfully closed.");
+        break;                                    //exit order closing loop
+      }
+      if (error_handler(GetLastError())==1) {
+        continue;                                 //retry order request
+      }
+      return;                                     //exit OnInit()
+    }
+    if(order_type==1 && close_sell==true) {       //i.e a Sell order is currently open
+      Alert("Attempting to close Sell order ",order_ticket,". Awaiting response.");
+      RefreshRates();
+      trade_answer=OrderClose(order_ticket,selected_lot_size,Ask,2);
+      if (trade_answer==true){
+        Alert("Sell order ",order_ticket," successfully closed.");
+        break;                                    //exit order closing loop
+      }
+      if (error_handler(GetLastError())==1) {
+        continue;                                 //retry order request
+      }
+      return;
+    }
+    break;                                        //exit while loop
+  }
 }
 
 
-
+int error_handler(int Error) {
+  return(0);
+}
 
 
 
