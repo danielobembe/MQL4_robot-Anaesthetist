@@ -31,7 +31,7 @@ void OnTick(){
           delta_stoch_trading,            //change between previous and current stochastic oscillator on 5min chart
           delta_stoch_alignment,          //change between previous and current stochastic oscillator on 15min chart
           selected_lot_size,              //Amount of lots in selected order
-          opened_lot_size,                //Amount of lots in an opened order
+          opened_lot_size,                //Amount of lots in opened order
           minimum_lot_size,               //Mimimum required amount of lots
           step,                           //Step of a lot size change
           free_margin,                    //Current free margin
@@ -183,6 +183,32 @@ void OnTick(){
     }
     break;                                        //exit while loop
   }
+
+
+  //Section 5: Computing Order Values
+  RefreshRates();
+  minimum_lot_size = MarketInfo(symb, MODE_MINLOT);     //Minimal Number Of Lots
+  free_margin = AccountFreeMargin();                    //Free Margin
+  lot_price = MarketInfo(symb, MODE_MARGINREQUIRED);    //Price of one Lot
+  step = MarketInfo(symb, MODE_LOTSTEP);                //Step of a Lot size change
+
+  if(selected_lot_size>0) {
+    opened_lot_size = selected_lot_size;
+  }
+  else
+    opened_lot_size = 0.1;             //TO_DO: figure this out later
+
+  if (selected_lot_size<minimum_lot_size) selected_lot_size = minimum_lot_size;
+
+  if (selected_lot_size * lot_price > free_margin){
+    Alert("Not enough money in account for ",selected_lot_size," lots.");
+    return;                           //exit OnTick
+  }
+
+
+  //Section 6: Opening Orders
+
+
 }
 
 
