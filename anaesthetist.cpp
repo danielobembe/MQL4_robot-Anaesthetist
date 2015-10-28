@@ -24,6 +24,10 @@ void OnTick(){
           ma_1_current_alignment,         //Current shorter moving average value, 15min chart
           ma_2_current_trading,           //Current longer moving average value, 5min chart
           ma_2_current_alignment,         //Current longer moving average value, 15min chart
+          stoch_trading_current,          //Current value of stochastic oscillator on 5 min chart
+          stoch_alignment_current,        //Current value of stochastic oscillator on 15 min chart
+          stoch_trading_previous,         //Previous (1 bar) value of stochastic oscillator on 5 min chart
+          stoch_alignment_previous,       //Previous (1 brar) value of stochastic oscillator on 15 min chart
           selected_lot_size,              //Amount of lots in selected order
           opened_lot_size,                //Amount of lots in an opened order
           minimum_lot_size,               //Mimimum required amount of lots
@@ -80,10 +84,13 @@ void OnTick(){
 
   //3_a: Verifying Trend
   ma_1_current_trading = iMA(NULL,5,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+                                    //5 min exponenetial moving average, period 50
   ma_2_current_trading = iMA(NULL,5,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
+                                    //5 min exponenetial moving average, period 200
   ma_1_current_alignment = iMA(NULL,15,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+                                    //15 min exponenetial moving average, period 50
   ma_2_current_alignment = iMA(NULL,15,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
-
+                                    //15 min exponenetial moving average, period 200
   bool trading_uptrend = (ma_1_current_trading > ma_2_current_trading);
                                     //true if 5m is in technical uptrend
   bool alignment_uptrend = (ma_1_current_alignment > ma_2_current_alignment);
@@ -91,17 +98,25 @@ void OnTick(){
   bool market_aligned = (trading_uptrend==alignment_uptrend);
                                     //true if both timeframes trend in same
                                     //direction
+  stoch_trading_current = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,0);
+                                    //stochastic oscillator 5 min
+  stoch_trading_previous = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,1);
 
-  if (trading_uptrend && market_aligned) Alert(Symbol()," in an aligned uptrend.");
-  if (!trading_uptrend && market_aligned) Alert(Symbol()," in an aligned downtrend.");
-  if (!market_aligned) Alert(Symbol()," unaligned. Trading on hold.");
+  stoch_alignment_current = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,0);
+                                    //stochastic oscillator 15 min
+  stoch_alignment_previous = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,1);
 
-  //if (trading_uptrend) Alert("Currently in uptrend on the 5 min chart.");
-  //if (!trading_uptrend) Alert("Currently in downtrend on the 5 min chart.");
-  //if (alignment_uptrend) Alert("Currently in uptrend on the 15 min chart.");
-  //if (!alignment_uptrend) Alert("Currently in downtrend on the 15 min chart.");
-  //if (market_aligned) Alert("Market is aligned. Trading can commence.");
-  //if(!market_aligned) Alert("Market is NOT aligned. Trading on hold.");
+
+  if (trading_uptrend && market_aligned) {
+      Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
+  }
+  if (!trading_uptrend && market_aligned) {
+      Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
+  }
+  if (!market_aligned) {
+      Alert(Symbol()," unaligned. Trading on hold. ", stoch_trading_current);
+  }
+
 
 
 }
