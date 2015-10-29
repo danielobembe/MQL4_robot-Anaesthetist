@@ -13,6 +13,11 @@ extern int ma_1_period = 50;        //Period of shorter moving average
 extern int ma_2_period = 200;       //Period of longer moving average
 bool will_work = true;              //Expert Advisor can function
 string symb;                        //Name of currency pair
+
+extern double stoploss =200;
+extern double takeprofit = 39;
+
+
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
@@ -124,27 +129,27 @@ void OnTick(){
   //3_c: Specifying Trading Criteria
   if (trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
-      if((stoch_alignment_current<=80.0 && delta_stoch_alignment>0)
-        && (stoch_trading_current<=20.0 && delta_stoch_trading>0)) {
-        Alert("Open Buy");
+      if((stoch_alignment_current<=80.0) // && delta_stoch_alignment>0)
+        && (stoch_trading_current<=20.0)) { // && delta_stoch_trading>0)) {
+        //Alert("Open Buy");
         open_buy = true;
       }
       if(//(stoch_alignment_current>=80.0 || delta_stoch_alignment<0) &&     //I think this is a bad condition esp 1st part
         (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
-        Alert("Close Buy");
+        //Alert("Close Buy");
         close_buy = true;
       }
   }
   if (!trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
-      if((stoch_alignment_current>=20.0 && delta_stoch_alignment<0)
-        && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
-        Alert("Open Sell");
+      if((stoch_alignment_current>=20.0) // && delta_stoch_alignment<0)
+        && (stoch_trading_current>=80.0)) {// && delta_stoch_trading<0)) {
+        //Alert("Open Sell");
         open_sell = true;
       }
       if(//(stoch_alignment_current<20.0 || delta_stoch_alignment>0) &&
-        (stoch_trading_current<20.0 && delta_stoch_trading>0)) {
-        Alert("Close Sell");
+        (stoch_trading_current<20.0)) { // && delta_stoch_trading>0)) {
+        //Alert("Close Sell");
         close_sell = true;
       }
   }
@@ -207,15 +212,92 @@ void OnTick(){
 
 
   //Section 6: Opening Orders
-
-
+  while(true) {
+    if(order_count==0 && open_buy==true) {
+      RefreshRates();
+      stop_loss = Bid - newStop(stoploss)*Point;
+      take_profit = Bid + newStop(takeprofit)*Point;
+      Alert("Attempt to open Buy Order. Awaiting response.");
+      //order_ticket = OrderSend(symb,OP_BUY,opened_lot_size,Ask,2,stop_loss,take_profit);
+      order_ticket = OrderSend(symb,OP_BUY,opened_lot_size,Ask,2,0,0);
+      if(order_ticket > 0) {
+        Alert("Opened Buy Order, ",order_ticket);
+        return;
+      }
+      if(error_handler(GetLastError())==1) {    //Processing errors
+        continue;                               //Retry
+      }
+      return;                                   //exit OnTick()
+    }
+    if(order_count==0 && open_sell==true) {
+      RefreshRates();
+      stop_loss = Ask - newStop(stoploss)*Point;
+      Alert("STOPLOSS :",stop_loss);
+      take_profit = Ask + newStop(takeprofit)*Point;
+      Alert("TAKEPROFIT :",take_profit);
+      Alert("Attempt to open Sell Order. Awaiting response.");
+      //order_ticket = OrderSend(symb,OP_SELL,opened_lot_size,Bid,2,stop_loss,take_profit);
+      order_ticket = OrderSend(symb,OP_SELL,opened_lot_size,Bid,2,0,0);
+      if(order_ticket > 0) {
+        Alert("Opened Sell Order, ",order_ticket);
+        return;
+      }
+      if(error_handler(GetLastError())==1) {    //Processing errors
+        continue;                               //Retry
+      }
+      return;
+    }
+    break;
+  }
+  return;
 }
 
 
 int error_handler(int Error) {
-  return(0);
+  switch(Error)
+       {                                          // Not crucial errors
+        case  4: Alert("Trade server is busy. Trying once again..");
+           Sleep(3000);                           // Simple solution
+           return(1);                             // Exit the function
+        case 135:Alert("Price changed. Trying once again..");
+           RefreshRates();                        // Refresh rates
+           return(1);                             // Exit the function
+        case 136:Alert("No prices. Waiting for a new tick..");
+           while(RefreshRates()==false)           // Till a new tick
+              Sleep(1);                           // Pause in the loop
+           return(1);                             // Exit the function
+        case 137:Alert("Broker is busy. Trying once again..");
+           Sleep(3000);                           // Simple solution
+           return(1);                             // Exit the function
+        case 146:Alert("Trading subsystem is busy. Trying once again..");
+           Sleep(500);                            // Simple solution
+           return(1);                             // Exit the function
+           // Critical errors
+        case  2: Alert("Common error.");
+           return(0);                             // Exit the function
+        case  5: Alert("Old terminal version.");
+           will_work=false;                            // Terminate operation
+           return(0);                             // Exit the function
+        case 64: Alert("Account blocked.");
+           will_work=false;                            // Terminate operation
+           return(0);                             // Exit the function
+        case 133:Alert("Trading forbidden.");
+           return(0);                             // Exit the function
+        case 134:Alert("Not enough money to execute operation.");
+           return(0);                             // Exit the function
+        default: Alert("Some Error occurred: ",Error);  // Other variants
+           return(0);                             // Exit the function
+       }
 }
 
+int newStop(int parameter) {
+  int minimum_distance = MarketInfo(symb,MODE_STOPLEVEL);
+  if (parameter < minimum_distance) {
+    parameter = minimum_distance;
+    Alert("Increased distance of stop level");
+  }
+  return(parameter);
+}
 
 
 
