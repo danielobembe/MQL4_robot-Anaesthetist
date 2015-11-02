@@ -14,8 +14,8 @@ extern int ma_2_period = 200;       //Period of longer moving average
 bool will_work = true;              //Expert Advisor can function
 string symb;                        //Name of currency pair
 
-extern double stoploss =200;
-extern double takeprofit = 39;
+extern double stoploss = 150;        //stoploss
+extern double takeprofit = 100;      //takeprofit
 
 
 //+------------------------------------------------------------------+
@@ -48,6 +48,7 @@ void OnTick(){
           close_sell = false,             //Criterion for closing Sell order
           open_buy = false,               //Criterion for opening Buy order
           open_sell = false,              //Criterion for opening Sell order
+          ranging_market = false,         //Criterion for closing all trades if market ranging
           trade_answer = false;           //Response from broker regarding trade request
 
 
@@ -127,40 +128,37 @@ void OnTick(){
                                     //change in stoch, 15 min
 
   //3_c: Specifying Trading Criteria
-  if (trading_uptrend && market_aligned) {
+  if (trading_uptrend && market_aligned) {      //NOTE_MODIFIED stoch period on close signals.
       Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
       if((stoch_alignment_current<=80.0) // && delta_stoch_alignment>0)
-        && (stoch_trading_current<=20.0)) { // && delta_stoch_trading>0)) {
-        //Alert("Open Buy");
+        && (stoch_trading_current<=20.0)) { // && delta_stoch_trading>0)) {}
         open_buy = true;
       }
       if(//(stoch_alignment_current>=80.0 || delta_stoch_alignment<0) &&     //I think this is a bad condition esp 1st part
-        (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
-        //Alert("Close Buy");
+        (stoch_alignment_current>=80.0 && delta_stoch_trading<0)) {
         close_buy = true;
       }
   }
   if (!trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
-      if((stoch_alignment_current>=20.0) // && delta_stoch_alignment<0)
-        && (stoch_trading_current>=80.0)) {// && delta_stoch_trading<0)) {
-        //Alert("Open Sell");
+      if((stoch_alignment_current>=20.0 && delta_stoch_alignment<0)
+        && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         open_sell = true;
       }
       if(//(stoch_alignment_current<20.0 || delta_stoch_alignment>0) &&
-        (stoch_trading_current<20.0)) { // && delta_stoch_trading>0)) {
-        //Alert("Close Sell");
+        (stoch_alignment_current<20.0)) { // && delta_stoch_trading>0)) {
         close_sell = true;
       }
   }
   if (!market_aligned) {
       Alert(Symbol()," unaligned. Trading suspended. ", stoch_trading_current);
+      ranging_market = true;
   }
 
 
   //Section 4: Closing Orders
   while(true) {                                   //order closing loop
-    if(order_type==0 && close_buy==true) {        //i.e a Buy order is currently open
+    if((order_type==0 && close_buy==true) || ranging_market==true) {        //i.e a Buy order is currently open
       Alert("Attempting to close Buy order ",order_ticket,". Awaiting response.");
       RefreshRates();                             //refresh rates
       trade_answer=OrderClose(order_ticket,selected_lot_size,Bid,2); //attempt to close Buy order
@@ -173,7 +171,7 @@ void OnTick(){
       }
       return;                                     //exit OnInit()
     }
-    if(order_type==1 && close_sell==true) {       //i.e a Sell order is currently open
+    if(order_type==1 && close_sell==true || ranging_market==true) {       //i.e a Sell order is currently open
       Alert("Attempting to close Sell order ",order_ticket,". Awaiting response.");
       RefreshRates();
       trade_answer=OrderClose(order_ticket,selected_lot_size,Ask,2);
@@ -222,6 +220,13 @@ void OnTick(){
       order_ticket = OrderSend(symb,OP_BUY,opened_lot_size,Ask,2,0,0);
       if(order_ticket > 0) {
         Alert("Opened Buy Order, ",order_ticket);
+        OrderSelect(order_ticket, SELECT_BY_TICKET);
+        bool res=OrderModify(OrderTicket(),OrderOpenPrice(),NormalizeDouble(Bid-(Point*stoploss),Digits),NormalizeDouble(Bid+(Point*takeprofit),Digits),0);
+        if(!res) {
+          Alert("Error, setting stoploss. Rechecking.");
+          if(error_handler(GetLastError())==1) continue;
+        }
+        else Alert("Stop Loss successfully in place.");
         return;
       }
       if(error_handler(GetLastError())==1) {    //Processing errors
@@ -240,6 +245,13 @@ void OnTick(){
       order_ticket = OrderSend(symb,OP_SELL,opened_lot_size,Bid,2,0,0);
       if(order_ticket > 0) {
         Alert("Opened Sell Order, ",order_ticket);
+        OrderSelect(order_ticket, SELECT_BY_TICKET);
+        bool res=OrderModify(OrderTicket(),OrderOpenPrice(),NormalizeDouble(Ask-(Point*stoploss),Digits),NormalizeDouble(Ask+(Point*takeprofit),Digits),0);
+        if(!res) {
+          Alert("Error, setting stoploss. Rechecking.");
+          if(error_handler(GetLastError())==1) continue;
+        }
+        else Alert("Stop Loss successfully in place.");
         return;
       }
       if(error_handler(GetLastError())==1) {    //Processing errors
