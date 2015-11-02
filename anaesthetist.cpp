@@ -141,7 +141,7 @@ void OnTick(){
   }
   if (!trading_uptrend && market_aligned) {
       Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
-      if((stoch_alignment_current>=20.0 && delta_stoch_alignment<0)
+      if((stoch_alignment_current>=90.0 && delta_stoch_alignment<0)
         && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         open_sell = true;
       }
