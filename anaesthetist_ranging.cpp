@@ -130,28 +130,43 @@ void OnTick(){
 
   //3_c: Specifying Trading Criteria
   if (trading_uptrend && market_aligned) {      //NOTE_MODIFIED stoch period on close signals.
-      //Uptrend
+      //Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
       if((stoch_alignment_current<=10.0 && delta_stoch_alignment>0)
         && (stoch_trading_current<=20.0 && delta_stoch_trading>0)) {
         open_buy = true;
       }
-      if(stoch_alignment_current>=80.0 && delta_stoch_alignment<0) { /////!!!!
+      if(stoch_alignment_current>=80.0 && delta_stoch_alignment<0) {
         close_buy = true;
       }
   }
   if (!trading_uptrend && market_aligned) {
-      //Downtrend
+      //Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
       if((stoch_alignment_current>=90.0 && delta_stoch_alignment<0)
         && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         open_sell = true;
       }
-      if(stoch_alignment_current<=20.0 && delta_stoch_alignment>0) { ////!!!!
+      if(stoch_alignment_current<=20.0 && delta_stoch_alignment>0) {
         close_sell = true;
       }
   }
   if (!market_aligned) {
-    //  Alert(Symbol()," unaligned. Trading suspended. ", stoch_trading_current);
-      ranging_market = true;
+      Alert(Symbol()," unaligned. Executing shorter time-frame trading criteria. ");
+      if (ma_1_current_alignment > ma_2_current_alignment) {     //Uptrend on longer timeframe
+        if (stoch_alignment_current<=20.0 && delta_stoch_alignment>0) {
+          close_sell = true;
+        }
+        if (stoch_alignment_current>=80 && delta_stoch_alignment<0) {
+          close_buy = true;
+        }
+      }
+      if (ma_1_current_alignment < ma_2_current_alignment) {     //Downtrend on shorter timeframe
+        if (stoch_alignment_current>=80 && delta_stoch_alignment<0) {
+          close_buy = true;
+        }
+        if (stoch_alignment_current<=20 && delta_stoch_alignment>0) {
+          close_sell = true;
+        }
+      }
   }
 
 
