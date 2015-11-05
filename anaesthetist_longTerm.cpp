@@ -98,13 +98,13 @@ void OnTick(){
   //Section 3: Specifying Trading Criteria
 
   //3_a: Tools For Verifying Trend
-  ma_1_current_trading = iMA(NULL,5,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_1_current_trading = iMA(NULL,15,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
                                     //5 min exponenetial moving average, period 50
-  ma_2_current_trading = iMA(NULL,5,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_2_current_trading = iMA(NULL,15,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
                                     //5 min exponenetial moving average, period 200
-  ma_1_current_alignment = iMA(NULL,15,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_1_current_alignment = iMA(NULL,30,ma_1_period,0,MODE_EMA,PRICE_TYPICAL,0);
                                     //15 min exponenetial moving average, period 50
-  ma_2_current_alignment = iMA(NULL,15,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
+  ma_2_current_alignment = iMA(NULL,30,ma_2_period,0,MODE_EMA,PRICE_TYPICAL,0);
                                     //15 min exponenetial moving average, period 200
   bool trading_uptrend = (ma_1_current_trading > ma_2_current_trading);
                                     //true if 5m is in technical uptrend
@@ -115,13 +115,13 @@ void OnTick(){
                                     //direction
 
   //3_b: Tools For Verifying Direction
-  stoch_trading_current = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,0);
+  stoch_trading_current = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,0);
                                     //stochastic oscillator 5 min, current bar
-  stoch_trading_previous = iStochastic(NULL,5,5,3,3,MODE_EMA,1,MODE_MAIN,1);
+  stoch_trading_previous = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,1);
                                     //stochastic oscillator 5 min, previous bar
-  stoch_alignment_current = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,0);
+  stoch_alignment_current = iStochastic(NULL,30,5,3,3,MODE_EMA,1,MODE_MAIN,0);
                                     //stochastic oscillator 15 min, current bar
-  stoch_alignment_previous = iStochastic(NULL,15,5,3,3,MODE_EMA,1,MODE_MAIN,1);
+  stoch_alignment_previous = iStochastic(NULL,30,5,3,3,MODE_EMA,1,MODE_MAIN,1);
                                     //stochastic oscillator 15 min, previous bar
   delta_stoch_trading = stoch_trading_current - stoch_trading_previous;
                                     //change in stoch, 5 min
@@ -152,22 +152,11 @@ void OnTick(){
   if (!market_aligned) {
     //  Alert(Symbol()," unaligned. Trading suspended. ", stoch_trading_current);
       ranging_market = true;
-      if (trading_uptrend) {
-        if (ma_1_current_alignment>=ma_2_current_alignment) {
-          //close_sell == true;
-        }
-      }
-      if (!trading_uptrend) {
-        if (ma_1_current_alignment<=ma_2_current_alignment) {
-          //close_buy == true;
-        }
-      }
   }
 
 
   //Section 4: Closing Orders
   while(true) {                                   //order closing loop
-
     if((order_type==0 && close_buy==true)) { //|| ranging_market==true) {        //i.e a Buy order is currently open
       Alert("Attempting to close Buy order ",order_ticket,". Awaiting response.");
       RefreshRates();                             //refresh rates
@@ -181,7 +170,6 @@ void OnTick(){
       }
       return;                                     //exit OnInit()
     }
-
     if(order_type==1 && close_sell==true) { // || ranging_market==true) {       //i.e a Sell order is currently open
       Alert("Attempting to close Sell order ",order_ticket,". Awaiting response.");
       RefreshRates();
@@ -195,42 +183,6 @@ void OnTick(){
       }
       return;
     }
-/*
-    if (ranging_market) {
-      if (order_type==0) { //&& close_buy==false) {   //existing buy order still open
-        double modified_stop = Bid-(newStop(30)*Point*10);
-        if (stop_loss<Bid-(newStop(stoploss)*Point*10)) {
-          bool res=OrderModify(order_ticket,order_price,NormalizeDouble(modified_stop,Digits),NormalizeDouble(take_profit,Digits),0);
-          if(!res) {
-            Alert("Error, setting stoploss. Rechecking.");
-            if(error_handler(GetLastError())==1) continue;
-          }
-          else Alert("Stop Loss successfully modified for ranging market.");
-          return;
-        }
-        //else Alert("Stop Loss was already modified.");
-        return;
-      }
-
-      if (order_type==1) { //&& close_sell==false) { //existing sell order still open
-        double modified_stop = Ask+(newStop(30)*Point*10);
-        if (stop_loss >= Ask+(newStop(stoploss)*Point*10)) {
-          Alert("AAAAAAAAAAAAAAAAHHHHHHHHHHH");
-          bool res=OrderModify(order_ticket,order_price,NormalizeDouble(modified_stop,Digits),NormalizeDouble(take_profit,Digits),0);
-          if(!res) {
-            Alert("Error, setting stoploss. Rechecking.");
-            if(error_handler(GetLastError())==1) continue;
-          }
-          else Alert("Stop Loss successfully modified for ranging market.");
-          return;
-        }
-        //else Alert("Stop Loss was already modified.");
-        return;
-      }
-
-      return;
-    }
-*/
     break;                                        //exit while loop
   }
 

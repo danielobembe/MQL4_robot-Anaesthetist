@@ -130,22 +130,22 @@ void OnTick(){
 
   //3_c: Specifying Trading Criteria
   if (trading_uptrend && market_aligned) {      //NOTE_MODIFIED stoch period on close signals.
-      //Alert(Symbol()," in an aligned uptrend. ", stoch_trading_current);
+      //Uptrend
       if((stoch_alignment_current<=10.0 && delta_stoch_alignment>0)
-        && (stoch_trading_current<=10.0 && delta_stoch_trading>0)) {
+        && (stoch_trading_current<=20.0 && delta_stoch_trading>0)) {
         open_buy = true;
       }
-      if(stoch_alignment_current>=80.0 && delta_stoch_trading<0) {
+      if(stoch_alignment_current>=80.0 && delta_stoch_alignment<0) { /////!!!!
         close_buy = true;
       }
   }
   if (!trading_uptrend && market_aligned) {
-      //Alert(Symbol()," in an aligned downtrend. ", stoch_trading_current);
+      //Downtrend
       if((stoch_alignment_current>=90.0 && delta_stoch_alignment<0)
         && (stoch_trading_current>=80.0 && delta_stoch_trading<0)) {
         open_sell = true;
       }
-      if(stoch_alignment_current<=20.0 && delta_stoch_trading>0) {
+      if(stoch_alignment_current<=20.0 && delta_stoch_alignment>0) { ////!!!!
         close_sell = true;
       }
   }
