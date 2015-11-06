@@ -132,7 +132,7 @@ void OnTick(){
 
   //3_c: Specifying Trading Criteria
   if (market_aligned && market_watcher=="Not Modified") {
-    Alert("Market watcher NOT modified");
+    //Alert("Market watcher NOT modified");
     if (trading_uptrend) {      //NOTE_MODIFIED stoch period on close signals.
         //Uptrend
         if((stoch_alignment_current<=10.0 && delta_stoch_alignment>0)
@@ -156,28 +156,31 @@ void OnTick(){
   }
 
   if (!market_aligned) {
-    Alert("Market watcher BEING modified");
+    //Alert("Market watcher BEING modified");
     market_watcher = "Modified";
     if (trading_uptrend) {}
     if (!trading_uptrend) {}
   }
 
+
   if (market_aligned && market_watcher=="Modified"){
-    Alert("Market watcher previously modified");
+    //Alert("Market watcher previously modified");
     //Market moves to uptrend when market watch on
     if (alignment_uptrend) {
       if (order_count==1) {
         if(order_type==1) {
           Alert("Downtrend reversed to Uptrend. Closing Sell, opening Buy.");
           close_sell = true;
+          market_watcher="Not Modified";
         }
         if(order_type==0) {
           Alert("Uptrend re-established. Leaving Buy open.");
+          market_watcher="Not Modified";
         }
       }
       if (order_count==0) {
-        Alert("Buying into uptrend.");
-        open_buy=true;
+        //Alert("Buying into uptrend.");
+        //open_buy=true;
         market_watcher="Not Modified";
       }
     }
@@ -187,14 +190,16 @@ void OnTick(){
         if(order_type==0) {
           Alert("Uptrend reversed to Downtrend. Closing Buy, opening Sell.");
           close_buy = true;
+          market_watcher="Not Modified";
         }
         if(order_type==1) {
           Alert("Downtrend re-established. Leaving Sell open.");
+          market_watcher="Not Modified";
         }
       }
       if (order_count==0) {
-        Alert("Selling with downtrend.");
-        open_sell=true;
+        //Alert("Selling with downtrend.");
+        //open_sell=true;
         market_watcher="Not Modified";
       }
     }
